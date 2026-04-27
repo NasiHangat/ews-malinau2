@@ -1,0 +1,26 @@
+services:
+  ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile.ingest
+    container_name: ews_ingest
+    volumes:
+      - db_data:/app/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: ews_web
+    environment:
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    volumes:
+      - db_data:/app/data
+    depends_on:
+      ingest:
+        condition: service_completed_successfully
+
+volumes:
+  db_data:

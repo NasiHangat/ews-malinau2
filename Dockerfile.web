@@ -1,0 +1,36 @@
+FROM node:20-alpine AS deps
+WORKDIR /app
+# Install build tools needed by better-sqlite3
+RUN apk add --no-cache python3 make g++
+COPY package.json ./
+RUN npm install
+
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN apk add --no-cache python3 make g++
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# Skip DB-touching during build by setting env
+ENV NEXT_PHASE=phase-production-build
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+RUN apk add --no-cache python3 make g++
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy node_modules for better-sqlite3 native binary
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+USER nextjs
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "server.js"]
