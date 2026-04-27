@@ -19,19 +19,57 @@ type Sensor = {
 };
 
 const CHART_COLORS: Record<string, string> = {
-  "WL-001": "#2d9cff",
-  "WL-002": "#a78bfa",
-  "WL-003": "#34d399",
+  "WL-001": "#1e88e5",
+  "WL-002": "#9c6fe4",
+  "WL-003": "#f02b4f",
 };
 
-const REFRESH_INTERVAL = 60_000; // 60s
+const REFRESH_INTERVAL = 60_000;
+
+/* ── Icon: Warning ── */
+const WarningIcon = () => (
+  <svg
+    className="alert-icon"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path
+      fillRule="evenodd"
+      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+      clipRule="evenodd"
+    />
+  </svg>
+);
+
+/* ── Icon: Droplet / Logo ── */
+const LogoIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="var(--accent)"
+    aria-hidden="true"
+  >
+    <path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z" />
+  </svg>
+);
 
 export default function Dashboard() {
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [now, setNow] = useState<Date | null>(null);
 
+  /* ── Clock ── */
+  useEffect(() => {
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  /* ── Fetch sensors ── */
   const fetchSensors = useCallback(async () => {
     try {
       const res = await fetch("/api/sensors");
@@ -54,13 +92,7 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, [fetchSensors]);
 
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => {
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
+  /* ── Derived state ── */
   const statusCounts = sensors.reduce(
     (acc, s) => {
       if (s.status) acc[s.status] = (acc[s.status] ?? 0) + 1;
@@ -73,6 +105,7 @@ export default function Dashboard() {
     (s) => s.status === "WASPADA" || s.status === "AWAS"
   );
 
+  /* ── Formatters ── */
   const formatTime = (d: Date) =>
     d.toLocaleString("id-ID", {
       day: "2-digit",
@@ -84,17 +117,25 @@ export default function Dashboard() {
       timeZone: "Asia/Makassar",
     }) + " WITA";
 
+  const formatClock = (d: Date) =>
+    d.toLocaleString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZone: "Asia/Makassar",
+    }) + " WITA";
+
   return (
     <div className="app-shell">
-      {/* Header */}
+      {/* ── Header ── */}
       <header className="app-header">
         <div className="header-left">
-          <div className="header-logo">🌊</div>
+          <div className="header-logo">
+            <LogoIcon />
+          </div>
           <div>
-            <div className="header-title">EWS Banjir Kabupaten Malinau</div>
-            <div className="header-sub">
-              Early Warning System · Kalimantan Utara
-            </div>
+            <div className="header-title">EWS Banjir · Kabupaten Malinau</div>
+            <div className="header-sub">EARLY WARNING SYSTEM — KALIMANTAN UTARA</div>
           </div>
         </div>
         <div className="header-meta">
@@ -104,19 +145,20 @@ export default function Dashboard() {
               LIVE
             </div>
           )}
-          <div className="header-time">{now ? formatTime(now) : ""}</div>
+          <div className="header-time">{now ? formatClock(now) : ""}</div>
         </div>
       </header>
 
-      {/* Alert banners */}
+      {/* ── Alert Banners ── */}
       {alertSensors
         .filter((s) => s.status === "AWAS")
         .map((s) => (
           <div className="alert-banner alert-banner-awas" key={s.id}>
-            <span className="alert-icon">🚨</span>
+            <WarningIcon />
             <span>
-              <strong>AWAS BANJIR:</strong> {s.name} ({s.id}) mencapai{" "}
-              {s.latest_value?.toFixed(1)} cm — melebihi batas AWAS {s.threshold_awas} cm
+              <strong>AWAS BANJIR</strong> — {s.name} ({s.id}) mencapai{" "}
+              {s.latest_value?.toFixed(1)} cm, melebihi batas AWAS{" "}
+              {s.threshold_awas} cm
             </span>
           </div>
         ))}
@@ -124,19 +166,20 @@ export default function Dashboard() {
         .filter((s) => s.status === "WASPADA")
         .map((s) => (
           <div className="alert-banner alert-banner-waspada" key={s.id}>
-            <span className="alert-icon">⚠️</span>
+            <WarningIcon />
             <span>
-              <strong>WASPADA:</strong> {s.name} ({s.id}) mencapai{" "}
-              {s.latest_value?.toFixed(1)} cm — mendekati batas AWAS {s.threshold_awas} cm
+              <strong>WASPADA</strong> — {s.name} ({s.id}) mencapai{" "}
+              {s.latest_value?.toFixed(1)} cm, mendekati batas AWAS{" "}
+              {s.threshold_awas} cm
             </span>
           </div>
         ))}
 
-      {/* Summary chips */}
+      {/* ── Summary Chips ── */}
       {!loading && (
         <div className="summary-row">
           <div className="summary-chip chip-aman">
-            <div className="summary-chip-label">Sensor Aman</div>
+            <div className="summary-chip-label">Aman</div>
             <div className="summary-chip-value">{statusCounts["AMAN"] ?? 0}</div>
           </div>
           <div className="summary-chip chip-siaga">
@@ -148,56 +191,41 @@ export default function Dashboard() {
             <div className="summary-chip-value">{statusCounts["WASPADA"] ?? 0}</div>
           </div>
           <div className="summary-chip chip-awas">
-            <div className="summary-chip-label">AWAS</div>
+            <div className="summary-chip-label">Awas</div>
             <div className="summary-chip-value">{statusCounts["AWAS"] ?? 0}</div>
           </div>
         </div>
       )}
 
-      {/* Error state */}
-      {error && (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "60px 20px",
-            color: "var(--awas-base)",
-            fontFamily: "var(--font-mono)",
-          }}
-        >
-          {error}
-        </div>
-      )}
+      {/* ── Error ── */}
+      {error && <div className="error-state">{error}</div>}
 
-      {/* Sensor cards */}
+      {/* ── Sensor Cards + Charts ── */}
       {!error && (
         <>
-          <div className="section-label">Status Sensor Saat Ini</div>
+          <div className="section-label">Status Sensor Aktif</div>
           <div className="sensor-grid">
             {loading
               ? [1, 2, 3].map((i) => (
                   <div
                     key={i}
                     className="skeleton"
-                    style={{ height: 240, borderRadius: 14 }}
+                    style={{ height: 240, borderRadius: 12 }}
                   />
                 ))
               : sensors.map((s) => <SensorCard key={s.id} sensor={s} />)}
           </div>
 
-          {/* Charts */}
           <div className="section-label" style={{ marginTop: 8 }}>
             Grafik Water Level — 7 Hari Terakhir
           </div>
           <div className="charts-grid">
             {loading
               ? [1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="chart-card"
-                  >
+                  <div key={i} className="chart-card">
                     <div
                       className="skeleton"
-                      style={{ height: 240, borderRadius: 8 }}
+                      style={{ height: 220, borderRadius: 8 }}
                     />
                   </div>
                 ))
@@ -212,24 +240,17 @@ export default function Dashboard() {
                     </div>
                     <WaterLevelChart
                       sensor={s}
-                      strokeColor={CHART_COLORS[s.id] ?? "#2d9cff"}
+                      strokeColor={CHART_COLORS[s.id] ?? "#1e88e5"}
                     />
                   </div>
                 ))}
           </div>
 
-          {/* Footer */}
+          {/* ── Footer ── */}
           {lastRefresh && (
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: 40,
-                fontSize: 11,
-                fontFamily: "var(--font-mono)",
-                color: "var(--text-muted)",
-              }}
-            >
-              Data diperbarui setiap 60 detik · Terakhir refresh: {formatTime(lastRefresh)}
+            <div className="dashboard-footer">
+              Data diperbarui setiap 60 detik &nbsp;·&nbsp; Terakhir refresh:{" "}
+              {formatTime(lastRefresh)}
             </div>
           )}
         </>
