@@ -101,7 +101,7 @@ export default function WaterLevelChart({ sensor, strokeColor }: Props) {
   }, [sensor.id]);
 
   const tickFormatter = (ts: string) => {
-    try { return format(parseISO(ts), "HH:mm"); } catch { return ts; }
+    try { return format(parseISO(ts), "dd/MM HH:mm"); } catch { return ts; }
   };
 
   const yDomain = (() => {

@@ -341,7 +341,6 @@ html, body {
   height: 6px;
   background: var(--bg-base);
   border-radius: 3px;
-  overflow: hidden;
   position: relative;
   margin-bottom: 8px;
 }
@@ -358,8 +357,6 @@ html, body {
 .fill-awas { background: linear-gradient(90deg, var(--awas-base) 0%, #cc0030 100%); }
 
 .threshold-markers {
-  display: flex;
-  justify-content: space-between;
   font-size: 10px;
   font-family: var(--font-mono);
   color: var(--text-muted);

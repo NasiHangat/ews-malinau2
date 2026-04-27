@@ -101,12 +101,46 @@ export default function SensorCard({ sensor }: { sensor: Sensor }) {
             className={`threshold-bar-fill ${fc}`}
             style={{ width: `${barPct}%` }}
           />
+          {/* Marker lines di posisi yang tepat */}
+          {[
+            { val: siaga, color: "var(--siaga-base)" },
+            { val: waspada, color: "var(--waspada-base)" },
+            { val: awas, color: "var(--awas-base)" },
+          ].map(({ val, color }) => (
+            <div
+              key={val}
+              style={{
+                position: "absolute",
+                left: `${(val / (awas * 1.1)) * 100}%`,
+                top: 0,
+                bottom: 0,
+                width: "1.5px",
+                background: color,
+                opacity: 0.7,
+              }}
+            />
+          ))}
         </div>
-        <div className="threshold-markers">
-          <span>0</span>
-          <span style={{ color: "var(--siaga-base)" }}>S {siaga}</span>
-          <span style={{ color: "var(--waspada-base)" }}>W {waspada}</span>
-          <span style={{ color: "var(--awas-base)" }}>A {awas}</span>
+        <div className="threshold-markers" style={{ position: "relative", height: "1.2em" }}>
+          {[
+            { val: siaga, label: `S ${siaga}`, color: "var(--siaga-base)" },
+            { val: waspada, label: `W ${waspada}`, color: "var(--waspada-base)" },
+            { val: awas, label: `A ${awas}`, color: "var(--awas-base)" },
+          ].map(({ val, label, color }) => (
+            <span
+              key={val}
+              style={{
+                position: "absolute",
+                left: `${(val / (awas * 1.1)) * 100}%`,
+                transform: "translateX(-50%)",
+                color,
+                fontSize: "0.7rem",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {label}
+            </span>
+          ))}
         </div>
       </div>
 
